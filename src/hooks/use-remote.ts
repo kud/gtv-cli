@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { AndroidRemote, RemoteDirection } from "androidtv-remote"
 import { readConfig } from "../lib/config.js"
 import { silenceRemoteConsole, stopRemote } from "../lib/remote.js"
-import { KEYCODE_DEL, sendText } from "../lib/text-input.js"
+import { sendImeText, trackImeCounters } from "../lib/ime-text.js"
 
 type VolumeState = { level: number; maximum: number; muted: boolean }
 
@@ -28,6 +28,7 @@ const useRemote = () => {
   })
 
   const remoteRef = useRef<AndroidRemote | null>(null)
+  const readyRef = useRef(false)
 
   useEffect(() => {
     const config = readConfig()
@@ -56,10 +57,12 @@ const useRemote = () => {
     })
 
     remoteRef.current = remote
+    trackImeCounters()
 
-    remote.on("ready", () =>
-      setState((s) => ({ ...s, connected: true, error: null })),
-    )
+    remote.on("ready", () => {
+      readyRef.current = true
+      setState((s) => ({ ...s, connected: true, error: null }))
+    })
     remote.on("powered", (powered: boolean) =>
       setState((s) => ({ ...s, powered })),
     )
@@ -69,40 +72,53 @@ const useRemote = () => {
     remote.on("current_app", (app: string) =>
       setState((s) => ({ ...s, currentApp: app })),
     )
-    remote.on("error", (err: Error) =>
-      setState((s) => ({ ...s, connected: false, error: err.message })),
-    )
-    remote.on("unpaired", () =>
+    remote.on("error", (err: Error) => {
+      readyRef.current = false
+      setState((s) => ({ ...s, connected: false, error: err.message }))
+    })
+    remote.on("unpaired", () => {
+      readyRef.current = false
       setState((s) => ({
         ...s,
         connected: false,
         error: "TV rejected the saved pairing. Run `gtv pair` again.",
-      })),
-    )
+      }))
+    })
 
     remote
       .start()
       .catch((err: Error) => setState((s) => ({ ...s, error: err.message })))
 
     return () => {
+      readyRef.current = false
       stopRemote(remote)
       restoreConsole()
     }
   }, [])
 
-  const sendKey = (keyCode: number, direction = RemoteDirection.SHORT) => {
-    remoteRef.current?.sendKey(keyCode, direction)
+  // The library's send methods throw if the socket isn't up yet (this.client is
+  // undefined while connecting), so every send is gated on `ready` and guarded.
+  const withReady = (fn: (remote: AndroidRemote) => void): void => {
+    if (!readyRef.current || !remoteRef.current) return
+    try {
+      fn(remoteRef.current)
+    } catch (error) {
+      readyRef.current = false
+      setState((s) => ({
+        ...s,
+        connected: false,
+        error: error instanceof Error ? error.message : String(error),
+      }))
+    }
   }
 
-  const typeText = (text: string) => {
-    if (remoteRef.current) sendText(remoteRef.current, text)
-  }
+  const sendKey = (keyCode: number, direction = RemoteDirection.SHORT) =>
+    withReady((remote) => remote.sendKey(keyCode, direction))
 
-  const deleteTextCharacter = () => {
-    remoteRef.current?.sendKey(KEYCODE_DEL, RemoteDirection.SHORT)
-  }
+  const typeText = (text: string) =>
+    withReady((remote) => sendImeText(remote, text))
 
-  return { state, sendKey, typeText, deleteTextCharacter }
+  return { state, sendKey, typeText }
 }
 
 export { useRemote, type RemoteState }

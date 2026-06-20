@@ -8,6 +8,7 @@ import { App } from "./app.js"
 import { pair } from "./commands/pair.js"
 import { discover } from "./commands/discover.js"
 import { doctor, status } from "./commands/status.js"
+import { imeDebug } from "./commands/ime-debug.js"
 import { switchDevice, listPairedDevices } from "./commands/devices.js"
 import { sendKey, launchApp } from "./lib/client.js"
 import { listDevices, readConfig, removeDevices } from "./lib/config.js"
@@ -83,6 +84,11 @@ program
   .command("doctor")
   .description("Run detailed Google TV diagnostics")
   .action(doctor)
+
+program
+  .command("ime-debug")
+  .description("Capture the TV's keyboard/IME protocol messages (diagnostic)")
+  .action(imeDebug)
 
 program
   .command("devices")

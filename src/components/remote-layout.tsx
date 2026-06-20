@@ -22,6 +22,7 @@ const Btn = ({
     borderColor="gray"
     width={width}
     height={3}
+    paddingX={1}
     alignItems="center"
     justifyContent="center"
   >
@@ -85,8 +86,8 @@ const RemoteLayout = ({
   const colWidth = twoColumn ? Math.floor((width - 4) / 2) : width
   // Size buttons to fit the longest label+hotkey ("SEARCH s", "PLAY spc") so the
   // hotkey never truncates; rows wrap when a column is too narrow for all of them.
-  const minButton = iconStyle === "text" ? 10 : 12
-  const maxButton = iconStyle === "text" ? 11 : 13
+  const minButton = iconStyle === "text" ? 12 : 15
+  const maxButton = iconStyle === "text" ? 13 : 16
   const btnWidth = Math.max(
     minButton,
     Math.min(maxButton, Math.floor((colWidth - 3) / 4)),

@@ -29,12 +29,13 @@ const CHAR_MAP: Record<string, string> = {
 const App = () => {
   const [lastKey, setLastKey] = useState("")
   const [mode, setMode] = useState<"remote" | "keyboard">("remote")
+  const [typed, setTyped] = useState("")
   const [iconStyle, setIconStyle] = useState(() => readPreferences().iconStyle)
   const [settingsMode, setSettingsMode] = useState(false)
   const [settingsCursor, setSettingsCursor] = useState(0)
   const { exit } = useApp()
   const { stdout } = useStdout()
-  const { state, sendKey, typeText, deleteTextCharacter } = useRemote()
+  const { state, sendKey, typeText } = useRemote()
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -71,24 +72,37 @@ const App = () => {
 
     if (key.tab) {
       setMode((m) => (m === "remote" ? "keyboard" : "remote"))
+      setTyped("")
       setLastKey("mode switch")
       return
     }
 
     if (mode === "keyboard") {
       if (key.escape) {
+        // BACK dismisses the TV's on-screen keyboard so the d-pad controls the
+        // app again instead of being swallowed by the keyboard overlay.
+        const backCode = KEYS["back"]
+        if (backCode) sendKey(backCode)
         setMode("remote")
+        setTyped("")
         return
       }
 
       if (key.return) {
-        typeText("\n")
-        setLastKey("submit")
+        if (typed) {
+          typeText(typed)
+          setLastKey(`sent "${typed}"`)
+          setTyped("")
+        } else {
+          const enterCode = KEYS["enter"]
+          if (enterCode) sendKey(enterCode)
+          setLastKey("submit")
+        }
         return
       }
 
       if (key.backspace || key.delete) {
-        deleteTextCharacter()
+        setTyped((value) => value.slice(0, -1))
         return
       }
 
@@ -112,8 +126,7 @@ const App = () => {
       }
 
       if (input) {
-        typeText(input)
-        setLastKey("typed")
+        setTyped((value) => value + input)
       }
       return
     }
@@ -183,26 +196,39 @@ const App = () => {
             current={iconStyle}
           />
         ) : mode === "keyboard" ? (
-          <Box flexDirection="column" alignItems="center">
-            <Text bold color="cyan">
-              ⌨ KEYBOARD MODE
-            </Text>
-            <Box marginTop={1}>
+          <Box
+            borderStyle="round"
+            borderColor="cyan"
+            flexDirection="column"
+            width={contentWidth}
+            paddingX={2}
+            paddingY={1}
+          >
+            <Box justifyContent="space-between">
+              <Text bold color="cyan">
+                ⌨ KEYBOARD
+              </Text>
+              <Text color="gray">→ {state.tvName ?? "TV"}</Text>
+            </Box>
+            <Box
+              marginTop={1}
+              borderStyle="single"
+              paddingX={1}
+              minHeight={5}
+              alignItems="flex-start"
+            >
               <Text>
-                Type here to send keystrokes straight to{" "}
-                <Text bold color="cyan">
-                  {state.tvName ?? "the TV"}
-                </Text>
-                .
+                {typed}
+                <Text color="cyan">▌</Text>
               </Text>
             </Box>
-            <Box>
+            <Box marginTop={1} flexDirection="column">
               <Text color="gray">
-                Use the TV's on-screen keyboard to see them.
+                Enter sends the text · Enter again (empty) submits
               </Text>
-            </Box>
-            <Box marginTop={1}>
-              <Text color="gray">Enter submit · ⌫ delete · Tab/Esc remote</Text>
+              <Text color="gray">
+                ⌫ edit · Tab toggle · Esc exit + dismiss keyboard
+              </Text>
             </Box>
           </Box>
         ) : (
