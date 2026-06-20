@@ -2,15 +2,18 @@ import { AndroidRemote } from "androidtv-remote"
 import inquirer from "inquirer"
 import ora from "ora"
 import chalk from "chalk"
-import { writeConfig } from "../lib/config.js"
+import { upsertDevice } from "../lib/config.js"
+import { silenceRemoteConsole, stopRemote } from "../lib/remote.js"
 import { discover, type DiscoveredDevice } from "./discover.js"
 
 const pairWithDevice = async (device: {
   host: string
   hostname: string
+  port?: number
   name?: string
 }): Promise<void> => {
   const spinner = ora("Connecting to TV…").start()
+  const restoreConsole = silenceRemoteConsole()
 
   const remote = new AndroidRemote(device.hostname, {
     pairing_port: 6467,
@@ -21,15 +24,21 @@ const pairWithDevice = async (device: {
     const fail = (msg: string) => {
       spinner.fail(msg)
       try {
-        remote.stop()
+        stopRemote(remote)
       } catch {}
+      restoreConsole()
       reject(new Error(msg))
     }
 
     remote.on("secret", async () => {
       spinner.stop()
+      process.stdout.write(
+        chalk.cyan(
+          "A PIN is now shown on your TV. Type that PIN here in the terminal, then press Enter.\n",
+        ),
+      )
       const { pin } = await inquirer.prompt<{ pin: string }>([
-        { type: "input", name: "pin", message: "Enter PIN shown on TV:" },
+        { type: "input", name: "pin", message: "TV PIN:" },
       ])
       remote.sendCode(pin)
       spinner.start("Pairing…")
@@ -37,15 +46,17 @@ const pairWithDevice = async (device: {
 
     remote.on("ready", () => {
       const cert = remote.getCertificate()
-      writeConfig({
+      upsertDevice({
         host: device.host,
+        port: device.port,
         name: device.name ?? "gtv-cli",
         cert: cert as { key: string; cert: string },
       })
       spinner.succeed("Paired! Config saved to ~/.config/gtv/config.json")
       try {
-        remote.stop()
+        stopRemote(remote)
       } catch {}
+      restoreConsole()
       resolve()
     })
 

@@ -3,10 +3,14 @@ import { Command } from "commander"
 import { render } from "ink"
 import React from "react"
 import chalk from "chalk"
+import inquirer from "inquirer"
 import { App } from "./app.js"
 import { pair } from "./commands/pair.js"
 import { discover } from "./commands/discover.js"
+import { doctor, status } from "./commands/status.js"
+import { switchDevice, listPairedDevices } from "./commands/devices.js"
 import { sendKey, launchApp } from "./lib/client.js"
+import { listDevices, readConfig, removeDevices } from "./lib/config.js"
 import { KEYS } from "./lib/keycodes.js"
 
 const program = new Command()
@@ -14,7 +18,53 @@ const program = new Command()
   .description("Control your Google TV")
   .version("0.1.0")
 
-program.command("pair").description("Pair with your Google TV").action(pair)
+program
+  .command("pair")
+  .description("Pair or re-pair with your Google TV")
+  .action(pair)
+
+program
+  .command("unpair")
+  .description("Forget the saved Google TV pairing")
+  .option("-y, --yes", "Unpair without prompting")
+  .action(async (opts: { yes?: boolean }) => {
+    const paired = listDevices()
+
+    if (paired.length === 0) {
+      process.stdout.write(chalk.yellow("No saved Google TV pairing found.\n"))
+      return
+    }
+
+    const current = readConfig()
+
+    if (opts.yes) {
+      const hosts = paired.map((device) => device.host)
+      removeDevices(hosts)
+      process.stdout.write(chalk.green(`Unpaired ${hosts.length} TV(s).\n`))
+      return
+    }
+
+    const { hosts } = await inquirer.prompt<{ hosts: string[] }>([
+      {
+        type: "checkbox",
+        name: "hosts",
+        message: "Which pairing(s) should be removed?",
+        choices: paired.map((device) => ({
+          name: `${device.name ?? "Google TV"}  ${chalk.gray(`${device.host}:${device.port ?? 6466}`)}`,
+          value: device.host,
+          checked: device.host === current?.host,
+        })),
+      },
+    ])
+
+    if (hosts.length === 0) {
+      process.stdout.write(chalk.yellow("Unpair cancelled.\n"))
+      return
+    }
+
+    removeDevices(hosts)
+    process.stdout.write(chalk.green(`Unpaired ${hosts.length} TV(s).\n`))
+  })
 
 program
   .command("discover")
@@ -24,6 +74,26 @@ program
   .action(async (opts: { select?: boolean; timeout: string }) => {
     await discover({ select: opts.select, timeout: parseInt(opts.timeout, 10) })
   })
+
+program
+  .command("status")
+  .description("Check Google TV pairing and connectivity")
+  .action(status)
+program
+  .command("doctor")
+  .description("Run detailed Google TV diagnostics")
+  .action(doctor)
+
+program
+  .command("devices")
+  .description("List paired Google TVs")
+  .action(listPairedDevices)
+
+program
+  .command("switch")
+  .argument("[device]", "TV name or host to make active")
+  .description("Switch the active Google TV")
+  .action(switchDevice)
 
 const key = (name: string) => async (): Promise<void> => {
   const k = KEYS[name]
@@ -83,8 +153,27 @@ program
     await sendKey(keyCode)
   })
 
+const ensurePaired = async (): Promise<boolean> => {
+  if (readConfig()) return true
+
+  const { shouldPair } = await inquirer.prompt<{ shouldPair: boolean }>([
+    {
+      type: "confirm",
+      name: "shouldPair",
+      message: "No Google TV is paired yet. Pair one now?",
+      default: true,
+    },
+  ])
+
+  if (!shouldPair) return false
+
+  await pair()
+  return Boolean(readConfig())
+}
+
 if (process.argv.length <= 2) {
-  render(<App />)
+  if (!(await ensurePaired())) process.exit(0)
+  render(<App />, { alternateScreen: true })
 } else {
   await program.parseAsync(process.argv)
 }

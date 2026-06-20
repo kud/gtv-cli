@@ -3,7 +3,7 @@ import dns from "node:dns/promises"
 import ora from "ora"
 import chalk from "chalk"
 import inquirer from "inquirer"
-import { writeConfig, readConfig } from "../lib/config.js"
+import { upsertDevice, getCurrentDevice } from "../lib/config.js"
 
 type DiscoveredDevice = {
   name: string
@@ -60,19 +60,21 @@ const resolveService = (
   })
 
 const discover = async (
-  opts: { timeout?: number; select?: boolean } = {},
+  opts: { timeout?: number; select?: boolean; quiet?: boolean } = {},
 ): Promise<DiscoveredDevice[]> => {
   const timeout = opts.timeout ?? 5000
-  const spinner = ora("Scanning for Google TV devices…").start()
+  const spinner = opts.quiet
+    ? null
+    : ora("Scanning for Google TV devices…").start()
 
   const names = await browseServices(timeout)
 
   if (names.length === 0) {
-    spinner.fail("No Google TV devices found on the network.")
+    spinner?.fail("No Google TV devices found on the network.")
     return []
   }
 
-  spinner.text = `Resolving ${names.length} device(s)…`
+  if (spinner) spinner.text = `Resolving ${names.length} device(s)…`
 
   const resolved = await Promise.all(
     names.map(async (name) => {
@@ -92,19 +94,21 @@ const discover = async (
   const found = resolved.filter((d): d is DiscoveredDevice => d !== null)
 
   if (found.length === 0) {
-    spinner.fail("Found devices but could not resolve their addresses.")
+    spinner?.fail("Found devices but could not resolve their addresses.")
     return []
   }
 
-  spinner.succeed(`Found ${found.length} device(s):`)
-  found.forEach((d) => {
-    process.stdout.write(
-      `  ${chalk.cyan(d.name)}  ${chalk.gray(`${d.host}:${d.port}`)}\n`,
-    )
-  })
+  if (spinner) {
+    spinner.succeed(`Found ${found.length} device(s):`)
+    found.forEach((d) => {
+      process.stdout.write(
+        `  ${chalk.cyan(d.name)}  ${chalk.gray(`${d.host}:${d.port}`)}\n`,
+      )
+    })
+  }
 
   if (opts.select) {
-    const existing = readConfig()
+    const existing = getCurrentDevice()
 
     const selected =
       found.length === 1
@@ -124,9 +128,13 @@ const discover = async (
             ])
             .then(({ device }) => found.find((d) => d.host === device)!)
 
-    writeConfig({ ...existing, host: selected.host, name: selected.name })
+    upsertDevice({
+      host: selected.host,
+      port: selected.port,
+      name: selected.name,
+    })
     process.stdout.write(
-      chalk.green(`✔ TV set to ${selected.name} (${selected.host})\n`),
+      chalk.green(`✔ Active TV set to ${selected.name} (${selected.host})\n`),
     )
   }
 
