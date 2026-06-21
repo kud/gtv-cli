@@ -9,6 +9,7 @@ import {
   type PrefCategory,
 } from "./components/settings-panel.js"
 import { AppLauncher } from "./components/app-launcher.js"
+import { Hotkeys } from "./components/hotkeys.js"
 import { KEYS, listApps, appLink } from "@kud/gtv"
 import {
   readIconStyle,
@@ -310,13 +311,15 @@ const App = () => {
                 <Text color="cyan">▌</Text>
               </Text>
             </Box>
-            <Box marginTop={1} flexDirection="column">
-              <Text color="gray">
-                Enter sends the text · Enter again (empty) submits
-              </Text>
-              <Text color="gray">
-                ⌫ edit · Tab toggle · Esc exit + dismiss keyboard
-              </Text>
+            <Box marginTop={1}>
+              <Hotkeys
+                hints={[
+                  { key: "↵", label: "send / submit" },
+                  { key: "⌫", label: "edit" },
+                  { key: "⇥", label: "remote" },
+                  { key: "esc", label: "exit" },
+                ]}
+              />
             </Box>
           </Box>
         ) : (

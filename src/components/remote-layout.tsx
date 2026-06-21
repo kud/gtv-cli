@@ -2,6 +2,7 @@ import React from "react"
 import { Box, Text } from "ink"
 import { iconFor } from "../lib/icons.js"
 import type { IconStyle } from "../lib/preferences.js"
+import { Hotkeys } from "./hotkeys.js"
 
 const DEFAULT_WIDTH = 64
 const TWO_COLUMN_MIN = 96
@@ -153,7 +154,14 @@ const RemoteLayout = ({
 
   const footer = (
     <Box marginTop={1}>
-      <Text color="gray">a apps · tab keyboard · o prefs · q quit</Text>
+      <Hotkeys
+        hints={[
+          { key: "a", label: "apps" },
+          { key: "⇥", label: "keyboard" },
+          { key: "o", label: "prefs" },
+          { key: "q", label: "quit" },
+        ]}
+      />
     </Box>
   )
 
