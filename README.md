@@ -11,6 +11,8 @@
 
 </div>
 
+Control your Google TV from the terminal — pair once, then drive an interactive Ink remote or fire one-shot key, media, and app-launch commands straight from the shell.
+
 ## Features
 
 - **Fullscreen TUI remote** — pair on first run; subsequent launches open an interactive Ink remote directly, no extra steps
