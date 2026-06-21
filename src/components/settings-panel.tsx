@@ -1,6 +1,6 @@
 import React from "react"
 import { Box, Text } from "ink"
-import type { IconStyle } from "../lib/config.js"
+import type { IconStyle } from "../lib/preferences.js"
 
 type Option = { value: IconStyle; label: string; hint: string }
 

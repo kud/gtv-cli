@@ -6,7 +6,7 @@ import {
   listDevices,
   setCurrentDevice,
   type Device,
-} from "../lib/config.js"
+} from "@kud/gtv"
 
 const deviceLabel = (device: Device): string =>
   `${device.name ?? "Google TV"}  ${chalk.gray(

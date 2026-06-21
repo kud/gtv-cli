@@ -1,10 +1,9 @@
-import { AndroidRemote } from "androidtv-remote"
 import inquirer from "inquirer"
 import ora from "ora"
 import chalk from "chalk"
-import { upsertDevice } from "../lib/config.js"
-import { silenceRemoteConsole, stopRemote } from "../lib/remote.js"
-import { discover, type DiscoveredDevice } from "./discover.js"
+import { pair as pairDevice } from "@kud/gtv"
+import { discover } from "./discover.js"
+import type { DiscoveredDevice } from "./discover.js"
 
 const pairWithDevice = async (device: {
   host: string
@@ -13,24 +12,19 @@ const pairWithDevice = async (device: {
   name?: string
 }): Promise<void> => {
   const spinner = ora("Connecting to TV…").start()
-  const restoreConsole = silenceRemoteConsole()
 
-  const remote = new AndroidRemote(device.hostname, {
-    pairing_port: 6467,
-    service_name: "gtv-cli",
-  })
-
-  await new Promise<void>((resolve, reject) => {
-    const fail = (msg: string) => {
-      spinner.fail(msg)
-      try {
-        stopRemote(remote)
-      } catch {}
-      restoreConsole()
-      reject(new Error(msg))
-    }
-
-    remote.on("secret", async () => {
+  await pairDevice({
+    host: device.host,
+    hostname: device.hostname,
+    port: device.port,
+    name: device.name ?? "gtv",
+    serviceName: "gtv-cli",
+    onStatus: (status) => {
+      if (status === "pairing") spinner.start("Pairing…")
+      else if (status === "paired")
+        spinner.succeed("Paired! Config saved to ~/.config/gtv/config.json")
+    },
+    onSecret: async () => {
       spinner.stop()
       process.stdout.write(
         chalk.cyan(
@@ -40,38 +34,11 @@ const pairWithDevice = async (device: {
       const { pin } = await inquirer.prompt<{ pin: string }>([
         { type: "input", name: "pin", message: "TV PIN:" },
       ])
-      remote.sendCode(pin)
-      spinner.start("Pairing…")
-    })
-
-    remote.on("ready", () => {
-      const cert = remote.getCertificate()
-      upsertDevice({
-        host: device.host,
-        port: device.port,
-        name: device.name ?? "gtv-cli",
-        cert: cert as { key: string; cert: string },
-      })
-      spinner.succeed("Paired! Config saved to ~/.config/gtv/config.json")
-      try {
-        stopRemote(remote)
-      } catch {}
-      restoreConsole()
-      resolve()
-    })
-
-    remote.on("unpaired", () => fail("TV rejected the pairing request."))
-    remote.on("error", (err: Error) => fail(err.message))
-
-    remote
-      .start()
-      .then((paired) => {
-        if (!paired)
-          fail(
-            "Could not connect to TV. Check that 'Remote Device Settings → Control remotely' is enabled.",
-          )
-      })
-      .catch((err: Error) => fail(err.message))
+      return pin
+    },
+  }).catch((error: Error) => {
+    spinner.fail(error.message)
+    throw error
   })
 }
 

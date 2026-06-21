@@ -1,8 +1,6 @@
 import chalk from "chalk"
 import { discover } from "./discover.js"
-import { connect } from "../lib/client.js"
-import { CONFIG_PATH, listDevices, readConfig } from "../lib/config.js"
-import { silenceRemoteConsole, stopRemote } from "../lib/remote.js"
+import { connect, CONFIG_PATH, listDevices, readConfig } from "@kud/gtv"
 
 const label = (name: string, value: string, marker = "") =>
   `  ${chalk.gray(name.padEnd(12))}${value}${marker ? ` ${marker}` : ""}\n`
@@ -14,19 +12,15 @@ const fail = chalk.red("●")
 const testConnection = async (): Promise<
   { ok: true } | { ok: false; message: string }
 > => {
-  const restoreConsole = silenceRemoteConsole()
-
   try {
     const remote = await connect()
-    stopRemote(remote)
+    remote.stop()
     return { ok: true }
   } catch (error) {
     return {
       ok: false,
       message: error instanceof Error ? error.message : String(error),
     }
-  } finally {
-    restoreConsole()
   }
 }
 

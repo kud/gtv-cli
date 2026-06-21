@@ -1,7 +1,7 @@
 import React from "react"
 import { Box, Text } from "ink"
 import { iconFor } from "../lib/icons.js"
-import type { IconStyle } from "../lib/config.js"
+import type { IconStyle } from "../lib/preferences.js"
 
 const DEFAULT_WIDTH = 64
 const TWO_COLUMN_MIN = 96

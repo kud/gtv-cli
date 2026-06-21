@@ -1,4 +1,4 @@
-import type { IconStyle } from "./config.js"
+import type { IconStyle } from "./preferences.js"
 
 type IconPair = { nerd: string; emoji: string }
 

@@ -7,8 +7,8 @@ import {
   SettingsPanel,
   ICON_STYLE_OPTIONS,
 } from "./components/settings-panel.js"
-import { KEYS } from "./lib/keycodes.js"
-import { readPreferences, writePreferences } from "./lib/config.js"
+import { KEYS } from "@kud/gtv"
+import { readIconStyle, writeIconStyle } from "./lib/preferences.js"
 
 const CHAR_MAP: Record<string, string> = {
   " ": "play",
@@ -30,7 +30,7 @@ const App = () => {
   const [lastKey, setLastKey] = useState("")
   const [mode, setMode] = useState<"remote" | "keyboard">("remote")
   const [typed, setTyped] = useState("")
-  const [iconStyle, setIconStyle] = useState(() => readPreferences().iconStyle)
+  const [iconStyle, setIconStyle] = useState(() => readIconStyle())
   const [settingsMode, setSettingsMode] = useState(false)
   const [settingsCursor, setSettingsCursor] = useState(0)
   const { exit } = useApp()
@@ -61,7 +61,7 @@ const App = () => {
       }
       if (key.return) {
         const chosen = ICON_STYLE_OPTIONS[settingsCursor]!.value
-        writePreferences({ iconStyle: chosen })
+        writeIconStyle(chosen)
         setIconStyle(chosen)
         setLastKey(`icons: ${chosen}`)
         setSettingsMode(false)

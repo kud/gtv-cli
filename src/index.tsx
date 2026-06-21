@@ -8,16 +8,28 @@ import { App } from "./app.js"
 import { pair } from "./commands/pair.js"
 import { discover } from "./commands/discover.js"
 import { doctor, status } from "./commands/status.js"
-import { imeDebug } from "./commands/ime-debug.js"
+import { debug } from "./commands/debug.js"
 import { switchDevice, listPairedDevices } from "./commands/devices.js"
-import { sendKey, launchApp } from "./lib/client.js"
-import { listDevices, readConfig, removeDevices } from "./lib/config.js"
-import { KEYS } from "./lib/keycodes.js"
+import {
+  sendKey,
+  launchApp,
+  listDevices,
+  readConfig,
+  removeDevices,
+  setDebug,
+  KEYS,
+} from "@kud/gtv"
 
 const program = new Command()
   .name("gtv")
   .description("Control your Google TV")
   .version("0.1.0")
+  .option("-d, --debug", "Stream verbose protocol logs")
+
+// A global --debug turns on the library's protocol logging for any command.
+program.hook("preAction", () => {
+  if (program.opts()["debug"]) setDebug(true)
+})
 
 program
   .command("pair")
@@ -86,9 +98,9 @@ program
   .action(doctor)
 
 program
-  .command("ime-debug")
-  .description("Capture the TV's keyboard/IME protocol messages (diagnostic)")
-  .action(imeDebug)
+  .command("debug")
+  .description("Stream live protocol logs (open a TV text field to see IME)")
+  .action(debug)
 
 program
   .command("devices")
