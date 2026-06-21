@@ -2,6 +2,9 @@ import chalk from "chalk"
 import { discover } from "./discover.js"
 import { connect, CONFIG_PATH, listDevices, readConfig } from "@kud/gtv"
 
+const header = (subtitle: string) =>
+  `${chalk.bold("Google TV")}${chalk.dim(` · ${subtitle}`)}\n\n`
+
 const label = (name: string, value: string, marker = "") =>
   `  ${chalk.gray(name.padEnd(12))}${value}${marker ? ` ${marker}` : ""}\n`
 
@@ -25,7 +28,7 @@ const testConnection = async (): Promise<
 }
 
 const status = async (): Promise<void> => {
-  process.stdout.write(chalk.bold("Google TV\n\n"))
+  process.stdout.write(header("status"))
 
   const config = readConfig()
   if (!config) {
@@ -60,7 +63,7 @@ const status = async (): Promise<void> => {
 }
 
 const doctor = async (): Promise<void> => {
-  process.stdout.write(chalk.bold("Google TV doctor\n\n"))
+  process.stdout.write(header("doctor"))
 
   const config = readConfig()
   if (!config) {

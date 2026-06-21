@@ -32,6 +32,7 @@ const ICONS: Record<string, IconPair> = {
   sleep: { nerd: "\u{f186}", emoji: "\u{1f319}" },
   wakeup: { nerd: "\u{f185}", emoji: "☀" },
   text: { nerd: "\u{f11c}", emoji: "⌨" },
+  apps: { nerd: "\u{f00a}", emoji: "\u{1f4fa}" },
 }
 
 const iconFor = (action: string, style: IconStyle): string => {

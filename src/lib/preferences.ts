@@ -1,4 +1,9 @@
-import { readPreferences, writePreferences } from "@kud/gtv"
+import {
+  readPreferences,
+  writePreferences,
+  listApps,
+  type AppEntry,
+} from "@kud/gtv"
 
 // Icon style is a TUI-only concern, so it lives in the CLI — a typed view over
 // @kud/gtv's opaque preferences bag, not part of the headless core.
@@ -19,4 +24,33 @@ const writeIconStyle = (iconStyle: IconStyle): void => {
   writePreferences({ iconStyle })
 }
 
-export { readIconStyle, writeIconStyle, DEFAULT_ICON_STYLE, type IconStyle }
+// App visibility — we persist the *disabled* ids so apps added to the catalog
+// later default to visible. enabledApps() is what the launcher should show.
+const readDisabledApps = (): string[] => {
+  const stored = readPreferences()["disabledApps"]
+  return Array.isArray(stored)
+    ? stored.filter((value): value is string => typeof value === "string")
+    : []
+}
+
+const isAppEnabled = (id: string): boolean => !readDisabledApps().includes(id)
+
+const toggleApp = (id: string): void => {
+  const disabled = new Set(readDisabledApps())
+  if (disabled.has(id)) disabled.delete(id)
+  else disabled.add(id)
+  writePreferences({ disabledApps: [...disabled] })
+}
+
+const enabledApps = (): AppEntry[] =>
+  listApps().filter((app) => isAppEnabled(app.id))
+
+export {
+  readIconStyle,
+  writeIconStyle,
+  DEFAULT_ICON_STYLE,
+  isAppEnabled,
+  toggleApp,
+  enabledApps,
+  type IconStyle,
+}

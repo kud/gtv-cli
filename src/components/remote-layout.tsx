@@ -107,6 +107,7 @@ const RemoteLayout = ({
         {btn("power", "PWR", "p")}
         {btn("home", "HOME", "h")}
         {btn("back", "BACK", "esc")}
+        {btn("apps", "APPS", "a")}
         {btn("settings", "SET", "e")}
         {btn("search", "SEARCH", "s")}
       </Row>
@@ -152,7 +153,7 @@ const RemoteLayout = ({
 
   const footer = (
     <Box marginTop={1}>
-      <Text color="gray">tab keyboard · o prefs · q quit</Text>
+      <Text color="gray">a apps · tab keyboard · o prefs · q quit</Text>
     </Box>
   )
 

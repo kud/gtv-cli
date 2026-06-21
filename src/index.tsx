@@ -10,9 +10,9 @@ import { discover } from "./commands/discover.js"
 import { doctor, status } from "./commands/status.js"
 import { debug } from "./commands/debug.js"
 import { switchDevice, listPairedDevices } from "./commands/devices.js"
+import { launch, appsMenu } from "./commands/apps.js"
 import {
   sendKey,
-  launchApp,
   listDevices,
   readConfig,
   removeDevices,
@@ -152,9 +152,14 @@ program
 
 program
   .command("app")
-  .argument("<deeplink>", "App deep link URL (e.g. https://www.netflix.com/)")
-  .description("Launch an app by deep link")
-  .action(launchApp)
+  .argument("<name|url>", "App name (e.g. netflix) or a deep link / URL")
+  .description("Launch an app by name or deep link")
+  .action(launch)
+
+program
+  .command("apps")
+  .description("Pick an app to launch from a menu")
+  .action(appsMenu)
 
 program
   .command("key")

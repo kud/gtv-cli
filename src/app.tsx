@@ -6,9 +6,18 @@ import { RemoteLayout } from "./components/remote-layout.js"
 import {
   SettingsPanel,
   ICON_STYLE_OPTIONS,
+  type PrefCategory,
 } from "./components/settings-panel.js"
-import { KEYS } from "@kud/gtv"
-import { readIconStyle, writeIconStyle } from "./lib/preferences.js"
+import { AppLauncher } from "./components/app-launcher.js"
+import { KEYS, listApps, appLink } from "@kud/gtv"
+import {
+  readIconStyle,
+  writeIconStyle,
+  enabledApps,
+  toggleApp,
+} from "./lib/preferences.js"
+
+const APPS = listApps()
 
 const CHAR_MAP: Record<string, string> = {
   " ": "play",
@@ -33,9 +42,20 @@ const App = () => {
   const [iconStyle, setIconStyle] = useState(() => readIconStyle())
   const [settingsMode, setSettingsMode] = useState(false)
   const [settingsCursor, setSettingsCursor] = useState(0)
+  const [settingsCategory, setSettingsCategory] =
+    useState<PrefCategory>("general")
+  const [enabledIds, setEnabledIds] = useState<string[]>(() =>
+    enabledApps().map((app) => app.id),
+  )
+  const [appsMode, setAppsMode] = useState(false)
+  const [appsCursor, setAppsCursor] = useState(0)
   const { exit } = useApp()
   const { stdout } = useStdout()
-  const { state, sendKey, typeText } = useRemote()
+  const { state, sendKey, typeText, launchApp } = useRemote()
+
+  // Only enabled apps appear in the launcher; the Preferences "Apps" tab toggles
+  // them against the full catalog.
+  const launcherApps = APPS.filter((app) => enabledIds.includes(app.id))
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -48,23 +68,74 @@ const App = () => {
         setSettingsMode(false)
         return
       }
+      if (key.tab) {
+        setSettingsCategory((c) => (c === "general" ? "apps" : "general"))
+        setSettingsCursor(0)
+        return
+      }
+
+      if (settingsCategory === "general") {
+        if (key.upArrow) {
+          setSettingsCursor(
+            (c) =>
+              (c - 1 + ICON_STYLE_OPTIONS.length) % ICON_STYLE_OPTIONS.length,
+          )
+          return
+        }
+        if (key.downArrow) {
+          setSettingsCursor((c) => (c + 1) % ICON_STYLE_OPTIONS.length)
+          return
+        }
+        if (key.return) {
+          const chosen = ICON_STYLE_OPTIONS[settingsCursor]!.value
+          writeIconStyle(chosen)
+          setIconStyle(chosen)
+          setLastKey(`icons: ${chosen}`)
+          setSettingsMode(false)
+          return
+        }
+        return
+      }
+
+      // Apps category — toggle catalog apps on/off.
       if (key.upArrow) {
-        setSettingsCursor(
-          (c) =>
-            (c - 1 + ICON_STYLE_OPTIONS.length) % ICON_STYLE_OPTIONS.length,
+        setSettingsCursor((c) => (c - 1 + APPS.length) % APPS.length)
+        return
+      }
+      if (key.downArrow) {
+        setSettingsCursor((c) => (c + 1) % APPS.length)
+        return
+      }
+      if (input === " ") {
+        const app = APPS[settingsCursor]!
+        toggleApp(app.id)
+        setEnabledIds(enabledApps().map((a) => a.id))
+        setLastKey(`toggle: ${app.name}`)
+        return
+      }
+      return
+    }
+
+    if (appsMode) {
+      if (key.escape || launcherApps.length === 0) {
+        setAppsMode(false)
+        return
+      }
+      if (key.upArrow) {
+        setAppsCursor(
+          (c) => (c - 1 + launcherApps.length) % launcherApps.length,
         )
         return
       }
       if (key.downArrow) {
-        setSettingsCursor((c) => (c + 1) % ICON_STYLE_OPTIONS.length)
+        setAppsCursor((c) => (c + 1) % launcherApps.length)
         return
       }
       if (key.return) {
-        const chosen = ICON_STYLE_OPTIONS[settingsCursor]!.value
-        writeIconStyle(chosen)
-        setIconStyle(chosen)
-        setLastKey(`icons: ${chosen}`)
-        setSettingsMode(false)
+        const app = launcherApps[appsCursor]!
+        launchApp(appLink(app))
+        setLastKey(`launch: ${app.name}`)
+        setAppsMode(false)
         return
       }
       return
@@ -137,6 +208,7 @@ const App = () => {
     }
 
     if (input === "o") {
+      setSettingsCategory("general")
       setSettingsCursor(
         Math.max(
           0,
@@ -145,6 +217,13 @@ const App = () => {
       )
       setSettingsMode(true)
       setLastKey("preferences")
+      return
+    }
+
+    if (input === "a") {
+      setAppsCursor(0)
+      setAppsMode(true)
+      setLastKey("apps")
       return
     }
 
@@ -192,8 +271,17 @@ const App = () => {
         ) : settingsMode ? (
           <SettingsPanel
             width={contentWidth}
+            category={settingsCategory}
             cursor={settingsCursor}
-            current={iconStyle}
+            iconStyle={iconStyle}
+            apps={APPS}
+            enabledIds={enabledIds}
+          />
+        ) : appsMode ? (
+          <AppLauncher
+            width={contentWidth}
+            cursor={appsCursor}
+            apps={launcherApps}
           />
         ) : mode === "keyboard" ? (
           <Box

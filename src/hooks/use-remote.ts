@@ -28,8 +28,9 @@ const useRemote = () => {
   const sendKey = (keyCode: number, direction?: number) =>
     sessionRef.current?.sendKey(keyCode, direction)
   const typeText = (text: string) => sessionRef.current?.typeText(text)
+  const launchApp = (link: string) => sessionRef.current?.launchApp(link)
 
-  return { state, sendKey, typeText }
+  return { state, sendKey, typeText, launchApp }
 }
 
 export { useRemote, type SessionState as RemoteState }
