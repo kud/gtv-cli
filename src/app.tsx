@@ -10,7 +10,7 @@ import {
 } from "./components/settings-panel.js"
 import { AppLauncher } from "./components/app-launcher.js"
 import { Hotkeys } from "./components/hotkeys.js"
-import { KEYS, listApps, appLink } from "@kud/gtv"
+import { KEYS, listApps, appLink, RemoteDirection } from "@kud/gtv"
 import {
   readIconStyle,
   writeIconStyle,
@@ -19,6 +19,13 @@ import {
 } from "./lib/preferences.js"
 
 const APPS = listApps()
+
+// A terminal emits no key-up event, so a long press is synthesised: bracket the
+// keycode with START_LONG then END_LONG after holding for this long.
+const LONG_PRESS_MS = 500
+
+// Keys that respond to a long press on a real remote (d-pad + OK).
+const LONG_PRESSABLE = new Set(["up", "down", "left", "right", "select"])
 
 const CHAR_MAP: Record<string, string> = {
   " ": "play",
@@ -53,6 +60,11 @@ const App = () => {
   const { exit } = useApp()
   const { stdout } = useStdout()
   const { state, sendKey, typeText, launchApp } = useRemote()
+
+  const longPress = (keyCode: number) => {
+    sendKey(keyCode, RemoteDirection.START_LONG)
+    setTimeout(() => sendKey(keyCode, RemoteDirection.END_LONG), LONG_PRESS_MS)
+  }
 
   // Only enabled apps appear in the launcher; the Preferences "Apps" tab toggles
   // them against the full catalog.
@@ -246,6 +258,12 @@ const App = () => {
 
     const keyCode = KEYS[keyName]
     if (!keyCode) return
+
+    if (key.shift && LONG_PRESSABLE.has(keyName)) {
+      longPress(keyCode)
+      setLastKey(`${keyName} (long)`)
+      return
+    }
 
     setLastKey(keyName)
     sendKey(keyCode)

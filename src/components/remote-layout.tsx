@@ -157,6 +157,7 @@ const RemoteLayout = ({
       <Hotkeys
         hints={[
           { key: "a", label: "apps" },
+          { key: "⇧+dpad", label: "long-press" },
           { key: "⇥", label: "keyboard" },
           { key: "o", label: "prefs" },
           { key: "q", label: "quit" },
