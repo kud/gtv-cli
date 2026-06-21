@@ -7,7 +7,7 @@
 
 **Control your Google TV from the terminal via the Android TV Remote v2 protocol**
 
-<a href="https://kud.io">Website</a> · <a href="https://kud.io/projects/gtv-cli/docs">Documentation</a>
+<a href="https://kud.io/projects/gtv-cli">Website</a> · <a href="https://kud.io/projects/gtv-cli/docs">Documentation</a>
 
 </div>
 
