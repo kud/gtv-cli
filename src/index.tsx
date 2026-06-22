@@ -11,6 +11,7 @@ import { doctor, status } from "./commands/status.js"
 import { debug } from "./commands/debug.js"
 import { switchDevice, listPairedDevices } from "./commands/devices.js"
 import { launch, appsMenu } from "./commands/apps.js"
+import { prefs } from "./commands/prefs.js"
 import {
   sendKey,
   listDevices,
@@ -160,6 +161,11 @@ program
   .command("apps")
   .description("Pick an app to launch from a menu")
   .action(appsMenu)
+
+program
+  .command("prefs")
+  .description("Edit preferences: icon style, app visibility and order")
+  .action(prefs)
 
 program
   .command("key")

@@ -105,6 +105,7 @@ const SettingsPanel = ({
               <Text bold={active} color={active ? "yellow" : undefined}>
                 {app.name}
               </Text>
+              {active && <Text color="gray">⇧↑↓ move</Text>}
             </Box>
           )
         })}
@@ -118,6 +119,7 @@ const SettingsPanel = ({
           category === "general"
             ? { key: "↵", label: "save" }
             : { key: "spc", label: "toggle" },
+          ...(category === "apps" ? [{ key: "⇧↑↓", label: "reorder" }] : []),
           { key: "⇥", label: "category" },
           { key: "esc", label: "close" },
         ]}

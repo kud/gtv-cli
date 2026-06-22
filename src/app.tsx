@@ -3,22 +3,11 @@ import { Box, Text, useApp, useInput, useStdout } from "ink"
 import { useRemote } from "./hooks/use-remote.js"
 import { StatusBar } from "./components/status-bar.js"
 import { RemoteLayout } from "./components/remote-layout.js"
-import {
-  SettingsPanel,
-  ICON_STYLE_OPTIONS,
-  type PrefCategory,
-} from "./components/settings-panel.js"
+import { Preferences } from "./components/preferences.js"
 import { AppLauncher } from "./components/app-launcher.js"
 import { Hotkeys } from "./components/hotkeys.js"
-import { KEYS, listApps, appLink, RemoteDirection } from "@kud/gtv"
-import {
-  readIconStyle,
-  writeIconStyle,
-  enabledApps,
-  toggleApp,
-} from "./lib/preferences.js"
-
-const APPS = listApps()
+import { KEYS, appLink, RemoteDirection, type AppEntry } from "@kud/gtv"
+import { readIconStyle, enabledApps, orderedApps } from "./lib/preferences.js"
 
 // A terminal emits no key-up event, so a long press is synthesised: bracket the
 // keycode with START_LONG then END_LONG after holding for this long.
@@ -49,12 +38,10 @@ const App = () => {
   const [typed, setTyped] = useState("")
   const [iconStyle, setIconStyle] = useState(() => readIconStyle())
   const [settingsMode, setSettingsMode] = useState(false)
-  const [settingsCursor, setSettingsCursor] = useState(0)
-  const [settingsCategory, setSettingsCategory] =
-    useState<PrefCategory>("general")
   const [enabledIds, setEnabledIds] = useState<string[]>(() =>
     enabledApps().map((app) => app.id),
   )
+  const [apps, setApps] = useState<AppEntry[]>(() => orderedApps())
   const [appsMode, setAppsMode] = useState(false)
   const [appsCursor, setAppsCursor] = useState(0)
   const { exit } = useApp()
@@ -68,7 +55,7 @@ const App = () => {
 
   // Only enabled apps appear in the launcher; the Preferences "Apps" tab toggles
   // them against the full catalog.
-  const launcherApps = APPS.filter((app) => enabledIds.includes(app.id))
+  const launcherApps = apps.filter((app) => enabledIds.includes(app.id))
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -76,58 +63,8 @@ const App = () => {
       return
     }
 
-    if (settingsMode) {
-      if (key.escape) {
-        setSettingsMode(false)
-        return
-      }
-      if (key.tab) {
-        setSettingsCategory((c) => (c === "general" ? "apps" : "general"))
-        setSettingsCursor(0)
-        return
-      }
-
-      if (settingsCategory === "general") {
-        if (key.upArrow) {
-          setSettingsCursor(
-            (c) =>
-              (c - 1 + ICON_STYLE_OPTIONS.length) % ICON_STYLE_OPTIONS.length,
-          )
-          return
-        }
-        if (key.downArrow) {
-          setSettingsCursor((c) => (c + 1) % ICON_STYLE_OPTIONS.length)
-          return
-        }
-        if (key.return) {
-          const chosen = ICON_STYLE_OPTIONS[settingsCursor]!.value
-          writeIconStyle(chosen)
-          setIconStyle(chosen)
-          setLastKey(`icons: ${chosen}`)
-          setSettingsMode(false)
-          return
-        }
-        return
-      }
-
-      // Apps category — toggle catalog apps on/off.
-      if (key.upArrow) {
-        setSettingsCursor((c) => (c - 1 + APPS.length) % APPS.length)
-        return
-      }
-      if (key.downArrow) {
-        setSettingsCursor((c) => (c + 1) % APPS.length)
-        return
-      }
-      if (input === " ") {
-        const app = APPS[settingsCursor]!
-        toggleApp(app.id)
-        setEnabledIds(enabledApps().map((a) => a.id))
-        setLastKey(`toggle: ${app.name}`)
-        return
-      }
-      return
-    }
+    // The Preferences panel owns all input while it is open.
+    if (settingsMode) return
 
     if (appsMode) {
       if (key.escape || launcherApps.length === 0) {
@@ -221,13 +158,6 @@ const App = () => {
     }
 
     if (input === "o") {
-      setSettingsCategory("general")
-      setSettingsCursor(
-        Math.max(
-          0,
-          ICON_STYLE_OPTIONS.findIndex((option) => option.value === iconStyle),
-        ),
-      )
       setSettingsMode(true)
       setLastKey("preferences")
       return
@@ -288,13 +218,16 @@ const App = () => {
         {tooNarrow ? (
           <Text color="yellow">Resize terminal to at least 34 columns.</Text>
         ) : settingsMode ? (
-          <SettingsPanel
+          <Preferences
             width={contentWidth}
-            category={settingsCategory}
-            cursor={settingsCursor}
             iconStyle={iconStyle}
-            apps={APPS}
+            setIconStyle={setIconStyle}
             enabledIds={enabledIds}
+            setEnabledIds={setEnabledIds}
+            apps={apps}
+            setApps={setApps}
+            onExit={() => setSettingsMode(false)}
+            onStatus={setLastKey}
           />
         ) : appsMode ? (
           <AppLauncher
