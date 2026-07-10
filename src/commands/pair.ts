@@ -15,7 +15,9 @@ const pairWithDevice = async (device: {
 
   await pairDevice({
     host: device.host,
-    hostname: device.hostname,
+    // Dial the resolved IPv4, not the mDNS ".local" name: the hostname expands
+    // to a scopeless IPv6 link-local that routes to loopback and never connects.
+    hostname: device.host,
     port: device.port,
     name: device.name ?? "gtv",
     serviceName: "gtv-cli",
@@ -38,6 +40,9 @@ const pairWithDevice = async (device: {
     },
   }).catch((error: Error) => {
     spinner.fail(error.message)
+    // The spinner already surfaced this; flag it so the top-level handler in
+    // index.tsx exits non-zero without printing the message a second time.
+    ;(error as { handled?: boolean }).handled = true
     throw error
   })
 }

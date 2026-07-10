@@ -200,9 +200,21 @@ const ensurePaired = async (): Promise<boolean> => {
   return Boolean(readConfig())
 }
 
-if (process.argv.length <= 2) {
-  if (!(await ensurePaired())) process.exit(0)
-  render(<App />, { alternateScreen: true })
-} else {
-  await program.parseAsync(process.argv)
+const run = async (): Promise<void> => {
+  if (process.argv.length <= 2) {
+    if (!(await ensurePaired())) process.exit(0)
+    render(<App />, { alternateScreen: true })
+  } else {
+    await program.parseAsync(process.argv)
+  }
 }
+
+run().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  // Commands that already reported the failure (e.g. pair, via its spinner)
+  // mark it handled; everything else prints one clean line, never a stack trace.
+  const alreadyShown =
+    error instanceof Error && (error as { handled?: boolean }).handled
+  if (!alreadyShown) process.stderr.write(chalk.red(`error: ${message}\n`))
+  process.exit(1)
+})
