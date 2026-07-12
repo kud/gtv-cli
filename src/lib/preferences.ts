@@ -7,10 +7,10 @@ import {
 
 // Icon style is a TUI-only concern, so it lives in the CLI — a typed view over
 // @kud/gtv's opaque preferences bag, not part of the headless core.
-type IconStyle = "nerd" | "emoji" | "text"
+type IconStyle = "nerd" | "text"
 
 const DEFAULT_ICON_STYLE: IconStyle = "text"
-const ICON_STYLES: IconStyle[] = ["text", "nerd", "emoji"]
+const ICON_STYLES: IconStyle[] = ["text", "nerd"]
 
 const isIconStyle = (value: unknown): value is IconStyle =>
   typeof value === "string" && ICON_STYLES.includes(value as IconStyle)

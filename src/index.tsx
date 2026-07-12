@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs"
 import { Command } from "commander"
 import { render } from "ink"
 import React from "react"
@@ -21,10 +22,16 @@ import {
   KEYS,
 } from "@kud/gtv"
 
+// Read the version from package.json so the CLI never drifts from the release.
+// Resolves from both src/ (dev) and dist/ (published) — each is one level under root.
+const { version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string }
+
 const program = new Command()
   .name("gtv")
   .description("Control your Google TV")
-  .version("0.1.0")
+  .version(version)
   .option("-d, --debug", "Stream verbose protocol logs")
 
 // A global --debug turns on the library's protocol logging for any command.

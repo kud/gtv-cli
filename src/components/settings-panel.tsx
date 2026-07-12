@@ -17,7 +17,6 @@ const ICON_STYLE_OPTIONS: Option[] = [
     label: "Nerd Font",
     hint: "single-width glyphs (needs a Nerd Font)",
   },
-  { value: "emoji", label: "Emoji", hint: "universal, may shift alignment" },
 ]
 
 const PREF_CATEGORIES = ["general", "apps"] as const
@@ -120,7 +119,7 @@ const SettingsPanel = ({
             ? { key: "↵", label: "save" }
             : { key: "spc", label: "toggle" },
           ...(category === "apps" ? [{ key: "⇧↑↓", label: "reorder" }] : []),
-          { key: "⇥", label: "category" },
+          { key: "←→", label: "category" },
           { key: "esc", label: "close" },
         ]}
       />

@@ -19,7 +19,7 @@ const Btn = ({
   width: number
 }) => (
   <Box
-    borderStyle="single"
+    borderStyle="round"
     borderColor="gray"
     width={width}
     height={3}
@@ -45,21 +45,23 @@ const Row = ({ children }: { children: React.ReactNode }) => (
   </Box>
 )
 
-const Divider = ({ title, width }: { title: string; width: number }) => {
-  const inner = ` ${title} `
-  const dashes = Math.max(2, width - inner.length)
-  const left = "─".repeat(Math.floor(dashes / 2))
-  const right = "─".repeat(dashes - left.length)
-  return (
-    <Box width={width}>
-      <Text color="gray">
-        {left}
-        {inner}
-        {right}
-      </Text>
-    </Box>
-  )
-}
+// dimColor darkens the gray so the section rules recede rather than compete
+// with the keys.
+const RULE = "─"
+
+// A short fixed run of dashes flanks the title instead of spanning the full
+// column, so the rule reads as a compact label rather than a full-width bar.
+const RULE_PAD = RULE.repeat(6)
+
+const Divider = ({ title, width }: { title: string; width: number }) => (
+  <Box width={width} justifyContent="center">
+    <Text color="gray">
+      <Text dimColor>{RULE_PAD}</Text>
+      {` ${title} `}
+      <Text dimColor>{RULE_PAD}</Text>
+    </Text>
+  </Box>
+)
 
 const Section = ({
   title,

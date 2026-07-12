@@ -55,7 +55,9 @@ const Preferences = ({
       onExit()
       return
     }
-    if (key.tab) {
+    // Left/right (or Tab) switch between the two categories; up/down are reserved
+    // for moving the cursor within the active category.
+    if (key.tab || key.leftArrow || key.rightArrow) {
       setCategory((c) => (c === "general" ? "apps" : "general"))
       setCursor(0)
       return

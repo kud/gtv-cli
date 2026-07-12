@@ -8,6 +8,7 @@ import { AppLauncher } from "./components/app-launcher.js"
 import { Hotkeys } from "./components/hotkeys.js"
 import { KEYS, appLink, RemoteDirection, type AppEntry } from "@kud/gtv"
 import { readIconStyle, enabledApps, orderedApps } from "./lib/preferences.js"
+import { fuzzyFilter } from "./lib/fuzzy.js"
 
 // A terminal emits no key-up event, so a long press is synthesised: bracket the
 // keycode with START_LONG then END_LONG after holding for this long.
@@ -44,6 +45,8 @@ const App = () => {
   const [apps, setApps] = useState<AppEntry[]>(() => orderedApps())
   const [appsMode, setAppsMode] = useState(false)
   const [appsCursor, setAppsCursor] = useState(0)
+  const [appsFilter, setAppsFilter] = useState("")
+  const [appsFiltering, setAppsFiltering] = useState(false)
   const { exit } = useApp()
   const { stdout } = useStdout()
   const { state, sendKey, typeText, launchApp } = useRemote()
@@ -56,6 +59,15 @@ const App = () => {
   // Only enabled apps appear in the launcher; the Preferences "Apps" tab toggles
   // them against the full catalog.
   const launcherApps = apps.filter((app) => enabledIds.includes(app.id))
+  // The launcher's "/" filter narrows the visible list; the cursor indexes into
+  // these results, so every handler below reads appResults, not launcherApps.
+  const appResults = fuzzyFilter(appsFilter, launcherApps, (app) => app.name)
+
+  const closeApps = () => {
+    setAppsMode(false)
+    setAppsFiltering(false)
+    setAppsFilter("")
+  }
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -67,26 +79,60 @@ const App = () => {
     if (settingsMode) return
 
     if (appsMode) {
-      if (key.escape || launcherApps.length === 0) {
-        setAppsMode(false)
+      if (launcherApps.length === 0) {
+        closeApps()
         return
       }
+
+      if (key.escape) {
+        // A first Esc backs out of the filter; a second closes the launcher.
+        if (appsFiltering) {
+          setAppsFiltering(false)
+          setAppsFilter("")
+          setAppsCursor(0)
+        } else {
+          closeApps()
+        }
+        return
+      }
+
+      if (key.return) {
+        const app = appResults[appsCursor]
+        if (app) {
+          launchApp(appLink(app))
+          setLastKey(`launch: ${app.name}`)
+          closeApps()
+        }
+        return
+      }
+
       if (key.upArrow) {
-        setAppsCursor(
-          (c) => (c - 1 + launcherApps.length) % launcherApps.length,
-        )
+        if (appResults.length > 0) {
+          setAppsCursor((c) => (c - 1 + appResults.length) % appResults.length)
+        }
         return
       }
       if (key.downArrow) {
-        setAppsCursor((c) => (c + 1) % launcherApps.length)
+        if (appResults.length > 0) {
+          setAppsCursor((c) => (c + 1) % appResults.length)
+        }
         return
       }
-      if (key.return) {
-        const app = launcherApps[appsCursor]!
-        launchApp(appLink(app))
-        setLastKey(`launch: ${app.name}`)
-        setAppsMode(false)
+
+      // "/" opens the filter; once open, printable keys edit the query and the
+      // list narrows live. Reset the cursor so it never points past the results.
+      if (!appsFiltering) {
+        if (input === "/") setAppsFiltering(true)
         return
+      }
+      if (key.backspace || key.delete) {
+        setAppsFilter((q) => q.slice(0, -1))
+        setAppsCursor(0)
+        return
+      }
+      if (input && !key.tab) {
+        setAppsFilter((q) => q + input)
+        setAppsCursor(0)
       }
       return
     }
@@ -208,6 +254,7 @@ const App = () => {
       flexDirection="column"
       borderStyle="round"
       borderColor="gray"
+      borderDimColor
       width={columns}
       height={stdout.rows}
       paddingX={2}
@@ -233,7 +280,9 @@ const App = () => {
           <AppLauncher
             width={contentWidth}
             cursor={appsCursor}
-            apps={launcherApps}
+            apps={appResults}
+            filtering={appsFiltering}
+            query={appsFilter}
           />
         ) : mode === "keyboard" ? (
           <Box
