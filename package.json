@@ -23,7 +23,8 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "link": "npm run build && npm link",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "screenshots": "npm run build && cli-shot --out assets/screenshots --cols 130 --rows 40 -- node dist/index.js"
   },
   "dependencies": {
     "@kud/gtv": "0.2.0",

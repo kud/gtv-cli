@@ -5,7 +5,7 @@ import { render } from "ink"
 import React from "react"
 import chalk from "chalk"
 import inquirer from "inquirer"
-import { App } from "./app.js"
+import { App, SCREENS, type Screen } from "./app.js"
 import { pair } from "./commands/pair.js"
 import { discover } from "./commands/discover.js"
 import { doctor, status } from "./commands/status.js"
@@ -207,10 +207,46 @@ const ensurePaired = async (): Promise<boolean> => {
   return Boolean(readConfig())
 }
 
+// The cli-shot contract, read from argv rather than declared on commander:
+// the remote opens on a bare invocation, which commander never sees. --screen
+// takes a value, so the name after it is discounted too when deciding whether
+// an invocation is bare — counting only the flag would send `gtv --screen apps`
+// down the subcommand path as an unknown command.
+const screenAt = process.argv.indexOf("--screen")
+const requestedScreen = screenAt === -1 ? undefined : process.argv[screenAt + 1]
+const mock = process.argv.includes("--mock")
+
+if (requestedScreen === "list") {
+  console.log(SCREENS.join("\n"))
+  process.exit(0)
+}
+
+if (
+  requestedScreen !== undefined &&
+  !SCREENS.includes(requestedScreen as Screen)
+) {
+  console.error(
+    `Unknown screen "${requestedScreen}". Available: ${SCREENS.join(", ")}`,
+  )
+  process.exit(1)
+}
+
+const invokedBare =
+  process.argv.filter(
+    (arg, i) =>
+      arg !== "--mock" &&
+      arg !== "--screen" &&
+      process.argv[i - 1] !== "--screen",
+  ).length <= 2
+
 const run = async (): Promise<void> => {
-  if (process.argv.length <= 2) {
-    if (!(await ensurePaired())) process.exit(0)
-    render(<App />, { alternateScreen: true })
+  if (invokedBare) {
+    // No pairing needed in mock mode — that is most of the point.
+    if (!mock && !(await ensurePaired())) process.exit(0)
+    render(
+      <App initialScreen={requestedScreen as Screen | undefined} mock={mock} />,
+      { alternateScreen: true },
+    )
   } else {
     await program.parseAsync(process.argv)
   }

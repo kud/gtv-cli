@@ -9,6 +9,8 @@
 
 <a href="https://kud.io/projects/gtv-cli">Website</a> · <a href="https://kud.io/projects/gtv-cli/docs">Documentation</a>
 
+<img src="assets/screenshots/remote.png" alt="The gtv terminal remote, connected to a Google TV" width="800" />
+
 </div>
 
 `gtv` pairs with a Google TV over the Android TV Remote v2 protocol, then lets you drive it from a fullscreen terminal remote or from one-shot shell commands.

@@ -5,6 +5,7 @@ import { StatusBar } from "./components/status-bar.js"
 import { RemoteLayout } from "./components/remote-layout.js"
 import { Preferences } from "./components/preferences.js"
 import { AppLauncher } from "./components/app-launcher.js"
+import { mockApps } from "./mock.js"
 import { Hotkeys } from "./components/hotkeys.js"
 import { KEYS, appLink, RemoteDirection, type AppEntry } from "@kud/gtv"
 import { readIconStyle, enabledApps, orderedApps } from "./lib/preferences.js"
@@ -33,23 +34,43 @@ const CHAR_MAP: Record<string, string> = {
   "-": "vol-down",
 }
 
-const App = () => {
+// The four things this can be showing. They live in three pieces of state
+// rather than one enum — the render is a ternary chain over settingsMode,
+// appsMode and mode — so opening on a named screen means seeding that trio
+// rather than setting one value.
+type Screen = "remote" | "keyboard" | "apps" | "settings"
+const SCREENS: Screen[] = ["remote", "keyboard", "apps", "settings"]
+
+type AppProps = {
+  /** Open directly on a screen. Omit for the remote. */
+  initialScreen?: Screen
+  /** Drive from fixtures: no session is opened and the keys are inert. */
+  mock?: boolean
+}
+
+const App = ({ initialScreen = "remote", mock = false }: AppProps) => {
   const [lastKey, setLastKey] = useState("")
-  const [mode, setMode] = useState<"remote" | "keyboard">("remote")
-  const [typed, setTyped] = useState("")
-  const [iconStyle, setIconStyle] = useState(() => readIconStyle())
-  const [settingsMode, setSettingsMode] = useState(false)
-  const [enabledIds, setEnabledIds] = useState<string[]>(() =>
-    enabledApps().map((app) => app.id),
+  const [mode, setMode] = useState<"remote" | "keyboard">(
+    initialScreen === "keyboard" ? "keyboard" : "remote",
   )
-  const [apps, setApps] = useState<AppEntry[]>(() => orderedApps())
-  const [appsMode, setAppsMode] = useState(false)
+  const [typed, setTyped] = useState("")
+  const [iconStyle, setIconStyle] = useState(() =>
+    mock ? "nerd" : readIconStyle(),
+  )
+  const [settingsMode, setSettingsMode] = useState(initialScreen === "settings")
+  const [enabledIds, setEnabledIds] = useState<string[]>(() =>
+    (mock ? mockApps() : enabledApps()).map((app) => app.id),
+  )
+  const [apps, setApps] = useState<AppEntry[]>(() =>
+    mock ? mockApps() : orderedApps(),
+  )
+  const [appsMode, setAppsMode] = useState(initialScreen === "apps")
   const [appsCursor, setAppsCursor] = useState(0)
   const [appsFilter, setAppsFilter] = useState("")
   const [appsFiltering, setAppsFiltering] = useState(false)
   const { exit } = useApp()
   const { stdout } = useStdout()
-  const { state, sendKey, typeText, launchApp } = useRemote()
+  const { state, sendKey, typeText, launchApp } = useRemote(mock)
 
   const longPress = (keyCode: number) => {
     sendKey(keyCode, RemoteDirection.START_LONG)
@@ -330,4 +351,4 @@ const App = () => {
   )
 }
 
-export { App }
+export { App, SCREENS, type Screen }
