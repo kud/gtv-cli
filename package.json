@@ -3,10 +3,12 @@
   "version": "0.6.0",
   "type": "module",
   "description": "Control your Google TV from the CLI",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kud/gtv-cli.git"
   },
+  "homepage": "https://kud.io/projects/gtv-cli",
   "bin": {
     "gtv": "dist/index.js"
   },
