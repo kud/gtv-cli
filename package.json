@@ -26,7 +26,8 @@
     "typecheck": "tsc --noEmit",
     "link": "npm run build && npm link",
     "prepublishOnly": "npm run build",
-    "screenshots": "npm run build && cli-shot --out assets/screenshots --cols 130 --rows 40 -- node dist/bin.js"
+    "screenshots": "npm run build && cli-shot --out assets/screenshots --cols 130 --rows 40 -- node dist/bin.js",
+    "test": "npm run build && node --test test/help.test.mjs"
   },
   "dependencies": {
     "@kud/gtv": "0.2.0",
@@ -47,5 +48,9 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "overrides": {
+    "node-forge": "1.4.3",
+    "protobufjs": "7.6.6"
   }
 }
