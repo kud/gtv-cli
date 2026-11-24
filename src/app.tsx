@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Box, Text, useApp, useInput, useStdout } from "ink"
+import { Box, Text, useApp, useInput, useWindowSize } from "ink"
 import { useRemote } from "./hooks/use-remote.js"
 import { StatusBar } from "./components/status-bar.js"
 import { RemoteLayout } from "./components/remote-layout.js"
@@ -69,7 +69,7 @@ const App = ({ initialScreen = "remote", mock = false }: AppProps) => {
   const [appsFilter, setAppsFilter] = useState("")
   const [appsFiltering, setAppsFiltering] = useState(false)
   const { exit } = useApp()
-  const { stdout } = useStdout()
+  const { columns, rows } = useWindowSize()
   const { state, sendKey, typeText, launchApp } = useRemote(mock)
 
   const longPress = (keyCode: number) => {
@@ -266,7 +266,6 @@ const App = ({ initialScreen = "remote", mock = false }: AppProps) => {
     sendKey(keyCode)
   })
 
-  const columns = stdout.columns ?? 80
   const contentWidth = Math.max(28, Math.min(64, columns - 6))
   const tooNarrow = columns < 34
 
@@ -277,7 +276,7 @@ const App = ({ initialScreen = "remote", mock = false }: AppProps) => {
       borderColor="gray"
       borderDimColor
       width={columns}
-      height={stdout.rows}
+      height={rows}
       paddingX={2}
       paddingY={1}
     >
