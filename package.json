@@ -10,7 +10,7 @@
   },
   "homepage": "https://kud.io/projects/gtv-cli",
   "bin": {
-    "gtv": "dist/index.js"
+    "gtv": "dist/bin.js"
   },
   "files": [
     "dist"
@@ -20,13 +20,13 @@
     "dev:pair": "tsx src/index.tsx pair",
     "dev:discover": "tsx src/index.tsx discover --select",
     "dev:tui": "tsx src/index.tsx",
-    "build": "tsup src/index.tsx --format esm --dts",
-    "build:watch": "tsup src/index.tsx --format esm --dts --watch",
+    "build": "tsup src/bin.ts src/index.tsx --format esm --dts",
+    "build:watch": "tsup src/bin.ts src/index.tsx --format esm --dts --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "link": "npm run build && npm link",
     "prepublishOnly": "npm run build",
-    "screenshots": "npm run build && cli-shot --out assets/screenshots --cols 130 --rows 40 -- node dist/index.js"
+    "screenshots": "npm run build && cli-shot --out assets/screenshots --cols 130 --rows 40 -- node dist/bin.js"
   },
   "dependencies": {
     "@kud/gtv": "0.2.0",
